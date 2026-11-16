@@ -30,7 +30,7 @@ public class PublicacionController extends ControllerBase {
             Publicacion borrador = publicacionService.crearBorrador(actorUserId, new PublicacionService.DatosPublicacion(
                     c.titulo(), c.descripcion(), c.categoria(), Enums.valor(Modalidad.class, c.modalidad(), null),
                     c.duracionMinutos(), c.precio(), c.etiquetas(), franjas,
-                    Enums.valor(TipoPublicacion.class, c.tipo(), TipoPublicacion.OFERTA)));
+                    Enums.valor(TipoPublicacion.class, c.tipo(), null)));
             return DtoMapper.publicacion(borrador);
         });
     }

@@ -13,6 +13,7 @@ import com.uade.skillswap.domain.model.Publicador;
 import com.uade.skillswap.domain.model.RecomendacionStrategy;
 import com.uade.skillswap.domain.model.RecomendacionStrategyFactory;
 import com.uade.skillswap.domain.model.SkillCoins;
+import com.uade.skillswap.domain.model.TipoPerfil;
 import com.uade.skillswap.domain.model.TipoPublicacion;
 import com.uade.skillswap.domain.model.observer.ObservadorDeEstado;
 import com.uade.skillswap.domain.repository.CriteriosBusqueda;
@@ -100,7 +101,10 @@ public class PublicacionService {
                 throw new IllegalArgumentException("El titulo es obligatorio");
             }
             Perfil autor = obtenerPerfil(autorUserId);
-            Publicacion publicacion = new Publicacion(UUID.randomUUID().toString(), autor, datos.titulo(), datos.tipo());
+            // Si no se indica, el tipo sale del perfil: una organizacion publica desafios (seccion 4.2).
+            TipoPublicacion tipo = datos.tipo() != null ? datos.tipo()
+                    : autor.getTipo() == TipoPerfil.ORGANIZACION ? TipoPublicacion.DESAFIO : TipoPublicacion.OFERTA;
+            Publicacion publicacion = new Publicacion(UUID.randomUUID().toString(), autor, datos.titulo(), tipo);
             wireObservadores(publicacion);
             aplicarDatos(publicacion, datos);
             return publicacionRepository.guardar(publicacion);

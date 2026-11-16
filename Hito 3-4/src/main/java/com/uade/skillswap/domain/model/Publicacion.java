@@ -115,7 +115,7 @@ public class Publicacion implements SujetoObservable {
             throw new IllegalStateException("Un perfil dado de baja no puede publicar");
         }
         if (!autor.puedePublicar(tipoFinal)) {
-            throw new IllegalArgumentException("Un perfil de este tipo no puede publicar un " + tipoFinal
+            throw new IllegalArgumentException("Este perfil no puede crear una publicacion de tipo " + tipoFinal
                     + " (seccion 4.2: los profesionales publican ofertas y las organizaciones, desafios)");
         }
         this.id = id;
