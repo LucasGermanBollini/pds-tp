@@ -15,6 +15,8 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <hibernate.version>7.2.1.Final</hibernate.version>
     <mysql.version>9.7.0</mysql.version>
+    <!-- clase por defecto de mvn exec:java; se cambia con -Dexec.mainClass=... -->
+    <exec.mainClass>com.uade.skillswap.SkillSwapRealApplication</exec.mainClass>
     <flyway.version>12.8.1</flyway.version>
     <junit.version>6.1.0</junit.version>
   </properties>
@@ -45,9 +47,10 @@
     <!-- Solo para que los tests de persistencia corran sin MySQL (seccion 12). -->
     <dependency>
       <groupId>com.h2database</groupId>
+      <!-- runtime (no solo test): permite levantar la app y la demo en modo H2 sin instalar MySQL -->
       <artifactId>h2</artifactId>
       <version>2.3.232</version>
-      <scope>test</scope>
+      <scope>runtime</scope>
     </dependency>
     <dependency>
       <groupId>org.junit.jupiter</groupId>
@@ -63,6 +66,10 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
         <version>3.14.1</version>
+        <configuration>
+          <!-- conserva los nombres de los parametros (los usa el generador del UML y mejora los mensajes) -->
+          <parameters>true</parameters>
+        </configuration>
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
@@ -134,9 +141,6 @@
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>exec-maven-plugin</artifactId>
         <version>3.6.3</version>
-        <configuration>
-          <mainClass>ar.edu.uade.skillswap.SkillSwapApplication</mainClass>
-        </configuration>
       </plugin>
     </plugins>
   </build>
