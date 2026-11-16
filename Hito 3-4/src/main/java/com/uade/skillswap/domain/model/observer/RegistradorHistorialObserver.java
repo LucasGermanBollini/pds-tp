@@ -20,6 +20,9 @@ public class RegistradorHistorialObserver implements ObservadorDeEstado {
 
     @Override
     public void actualizar(CambioEstadoEvento evento) {
+        if (!evento.getTipo().registraHistorial()) {
+            return; // una propuesta de reprogramacion no es una transicion de estado
+        }
         HistorialEstado registro = new HistorialEstado(
                 UUID.randomUUID().toString(),
                 evento.getEntidadTipo(),

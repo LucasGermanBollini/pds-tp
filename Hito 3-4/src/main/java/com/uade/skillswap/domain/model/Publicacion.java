@@ -3,6 +3,7 @@ package com.uade.skillswap.domain.model;
 import com.uade.skillswap.domain.model.observer.CambioEstadoEvento;
 import com.uade.skillswap.domain.model.observer.ObservadorDeEstado;
 import com.uade.skillswap.domain.model.observer.SujetoObservable;
+import com.uade.skillswap.domain.model.observer.TipoEventoDominio;
 import com.uade.skillswap.domain.model.state.EstadoPublicacion;
 import com.uade.skillswap.domain.model.state.EstadoPublicacionBorrador;
 import com.uade.skillswap.domain.model.state.EstadoPublicacionFactory;
@@ -23,6 +24,11 @@ public class Publicacion implements SujetoObservable {
     @ManyToOne(targetEntity = Perfil.class, fetch = FetchType.EAGER)
     @JoinColumn(name = "autor_perfil_id", nullable = false)
     private Publicador autor;
+
+    /** OFERTA (profesional) o DESAFIO (organizacion), seccion 4.2. */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "tipo_publicacion", nullable = false)
+    private TipoPublicacion tipo = TipoPublicacion.OFERTA;
 
     @Column(nullable = false)
     private String titulo;
@@ -81,6 +87,13 @@ public class Publicacion implements SujetoObservable {
     @Column(name = "contador_solicitudes", nullable = false)
     private int contadorSolicitudes = 0;
 
+    @Column(name = "fecha_creacion", nullable = false)
+    private LocalDateTime fechaCreacion;
+
+    /** Se fija la primera vez que pasa a PUBLICADA; permite ordenar por "fecha mas reciente" (seccion 4.3). */
+    @Column(name = "fecha_publicacion")
+    private LocalDateTime fechaPublicacion;
+
     /** Los observers son comportamiento de runtime (Hito 2/3); no se persisten. */
     @Transient
     private List<ObservadorDeEstado> observadores = new ArrayList<>();
@@ -90,12 +103,26 @@ public class Publicacion implements SujetoObservable {
     }
 
     public Publicacion(String id, Publicador autor, String titulo) {
+        this(id, autor, titulo, TipoPublicacion.OFERTA);
+    }
+
+    public Publicacion(String id, Publicador autor, String titulo, TipoPublicacion tipo) {
         if (autor == null) {
             throw new IllegalArgumentException("La publicacion necesita un autor");
+        }
+        TipoPublicacion tipoFinal = tipo == null ? TipoPublicacion.OFERTA : tipo;
+        if (!autor.estaActivo()) {
+            throw new IllegalStateException("Un perfil dado de baja no puede publicar");
+        }
+        if (!autor.puedePublicar(tipoFinal)) {
+            throw new IllegalArgumentException("Un perfil de este tipo no puede publicar un " + tipoFinal
+                    + " (seccion 4.2: los profesionales publican ofertas y las organizaciones, desafios)");
         }
         this.id = id;
         this.autor = autor;
         this.titulo = titulo;
+        this.tipo = tipoFinal;
+        this.fechaCreacion = LocalDateTime.now();
     }
 
     @PostLoad
@@ -106,22 +133,47 @@ public class Publicacion implements SujetoObservable {
     // ---- acciones delegadas al State ----
 
     public void publicar(String actorUserId) {
+        verificarAutor(actorUserId);
+        if (!autor.estaActivo()) {
+            throw new IllegalStateException("Un perfil dado de baja no puede publicar");
+        }
         estado.publicar(this, actorUserId);
     }
 
     public void pausar(String actorUserId) {
+        verificarAutor(actorUserId);
         estado.pausar(this, actorUserId);
     }
 
     public void cerrar(String actorUserId) {
+        verificarAutor(actorUserId);
         estado.cerrar(this, actorUserId);
     }
 
     public void cancelar(String actorUserId, String motivo) {
+        verificarAutor(actorUserId);
         if (motivo == null || motivo.isBlank()) {
             throw new IllegalArgumentException("Cancelar una publicacion requiere motivo (seccion 4.2)");
         }
         estado.cancelar(this, actorUserId, motivo);
+    }
+
+    /**
+     * Seccion 5: permisos a partir del userId. Solo el autor gestiona su
+     * publicacion (GRASP Information Expert: la publicacion conoce a su autor).
+     */
+    public void verificarAutor(String actorUserId) {
+        if (actorUserId == null || !autor.obtenerId().equals(actorUserId)) {
+            throw new AccesoDenegadoException("Solo el autor puede modificar la publicacion '" + titulo + "'");
+        }
+    }
+
+    public boolean esAutor(String userId) {
+        return autor.obtenerId().equals(userId);
+    }
+
+    public boolean estaPublicada() {
+        return "PUBLICADA".equals(estadoNombre);
     }
 
     /** Invocado por los estados concretos; publico porque viven en otro paquete. */
@@ -129,7 +181,12 @@ public class Publicacion implements SujetoObservable {
         String anterior = this.estadoNombre;
         this.estado = nuevo;
         this.estadoNombre = nuevo.getNombre();
-        notificar(new CambioEstadoEvento("PUBLICACION", id, anterior, this.estadoNombre, actorUserId, motivo, LocalDateTime.now()));
+        if (estaPublicada() && fechaPublicacion == null) {
+            fechaPublicacion = LocalDateTime.now();
+        }
+        String descripcion = "Tu publicacion '" + titulo + "' paso de " + anterior + " a " + estadoNombre;
+        notificar(new CambioEstadoEvento(TipoEventoDominio.CAMBIO_ESTADO, "PUBLICACION", id, anterior, estadoNombre,
+                actorUserId, motivo, descripcion, List.of(autor.obtenerId()), LocalDateTime.now()));
     }
 
     /** Seccion 4.2: "Publicar requiere titulo, categoria, precio no negativo y al menos una franja". */
@@ -171,8 +228,20 @@ public class Publicacion implements SujetoObservable {
 
     // ---- edicion mientras esta en BORRADOR/PAUSADA ----
 
+    /** Seccion 4.2: "BORRADOR: editable". Tambien se permite editar una PAUSADA (no recibe solicitudes). */
+    private void verificarEditable() {
+        if (!"BORRADOR".equals(estadoNombre) && !"PAUSADA".equals(estadoNombre)) {
+            throw new IllegalStateException("Solo se puede editar una publicacion en BORRADOR o PAUSADA (estado actual: "
+                    + estadoNombre + ")");
+        }
+    }
+
     public void completarDatos(String descripcion, ElementoCatalogo categoria, Modalidad modalidad,
                                 int duracionEstimadaMinutos, SkillCoins precioBase) {
+        verificarEditable();
+        if (duracionEstimadaMinutos < 0) {
+            throw new IllegalArgumentException("La duracion estimada no puede ser negativa");
+        }
         this.descripcion = descripcion;
         this.categoria = categoria;
         this.modalidad = modalidad;
@@ -181,12 +250,14 @@ public class Publicacion implements SujetoObservable {
     }
 
     public void agregarEtiqueta(Habilidad habilidad) {
+        verificarEditable();
         if (habilidad != null && !etiquetas.contains(habilidad)) {
             etiquetas.add(habilidad);
         }
     }
 
     public void agregarFranja(FranjaDisponibilidad franja) {
+        verificarEditable();
         if (franja != null) {
             franja.asignarPublicacion(this);
             franjas.add(franja);
@@ -212,7 +283,36 @@ public class Publicacion implements SujetoObservable {
     }
 
     public void setTitulo(String titulo) {
+        verificarEditable();
+        if (titulo == null || titulo.isBlank()) {
+            throw new IllegalArgumentException("El titulo no puede quedar vacio");
+        }
         this.titulo = titulo;
+    }
+
+    public TipoPublicacion getTipo() {
+        return tipo;
+    }
+
+    public LocalDateTime getFechaCreacion() {
+        return fechaCreacion;
+    }
+
+    public LocalDateTime getFechaPublicacion() {
+        return fechaPublicacion;
+    }
+
+    /** "Cupo" de la seccion 4.2: suma del cupo de todas sus franjas. */
+    public int getCupoTotal() {
+        return franjas.stream().mapToInt(FranjaDisponibilidad::getCupoTotal).sum();
+    }
+
+    public int getCupoDisponible() {
+        return franjas.stream().mapToInt(FranjaDisponibilidad::getCupoDisponible).sum();
+    }
+
+    public double getReputacionAutor() {
+        return autor instanceof Perfil perfil ? perfil.getReputacionPromedio() : 0;
     }
 
     public String getDescripcion() {

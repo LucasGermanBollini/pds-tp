@@ -1,8 +1,12 @@
-package com.uade.skillswap.presentation.controller;
+package com.uade.skillswap.presentation.ui;
 
 import ar.edu.uade.skillswap.controllers.UiControllers;
 
 /**
+ * Adapter Pattern: la interfaz de la catedra habla el "idioma" de
+ * UiControllers; nuestros controllers (seccion 9) hablan en DTOs y
+ * Resultado. Cada *UiController adapta un contrato al otro.
+ *
  * Implementacion real de UiControllers (reemplaza a MockSkillSwapControllers,
  * seccion 10: "Los equipos... deberan implementar los controllers reales y
  * conectarlos mediante interfaces Java"). Cada sub-controller delega en los

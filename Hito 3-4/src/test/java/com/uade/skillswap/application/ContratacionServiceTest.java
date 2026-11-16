@@ -37,8 +37,7 @@ class ContratacionServiceTest {
 
         List<ObservadorDeEstado> observadores = List.of(
                 new RegistradorHistorialObserver(historialRepository),
-                new NotificadorObserver(publicacionRepository, contratacionRepository, notificacionRepository,
-                        perfilRepository, new CanalNotificacionFactoryImpl()));
+                new NotificadorObserver(notificacionRepository, perfilRepository, new CanalNotificacionFactoryImpl()));
 
         publicacionService = new PublicacionService(publicacionRepository, new InMemoryElementoCatalogoRepository(), observadores);
         contratacionService = new ContratacionService(contratacionRepository, publicacionRepository, walletRepository,
@@ -57,7 +56,7 @@ class ContratacionServiceTest {
         Publicacion publicacion = publicacionService.crearBorrador(autor, "Mentoria de entrevistas");
         FranjaDisponibilidad franja = new FranjaDisponibilidad("f-1", LocalDateTime.now().plusDays(2),
                 LocalDateTime.now().plusDays(2).plusHours(1), cupo);
-        publicacionService.completarDatos(publicacion.getId(), "desc", new CategoriaHabilidad("cat-1", "Carrera"),
+        publicacionService.completarDatos(publicacion.getId(), autor.obtenerId(), "desc", new CategoriaHabilidad("cat-1", "Carrera"),
                 Modalidad.REMOTA, 60, SkillCoins.de(precioBase), List.of(), List.of(franja));
         return publicacionService.publicar(publicacion.getId(), autor.obtenerId());
     }
@@ -140,7 +139,7 @@ class ContratacionServiceTest {
                 LocalDateTime.now().plusHours(11), 2);
         FranjaDisponibilidad franja2 = new FranjaDisponibilidad("f-urgente-2", LocalDateTime.now().plusHours(10),
                 LocalDateTime.now().plusHours(11), 2);
-        publicacionService.completarDatos(publicacion.getId(), "desc", new CategoriaHabilidad("cat-1", "Carrera"),
+        publicacionService.completarDatos(publicacion.getId(), proveedor.obtenerId(), "desc", new CategoriaHabilidad("cat-1", "Carrera"),
                 Modalidad.REMOTA, 60, SkillCoins.de(1000), List.of(), List.of(franja1, franja2));
         publicacion = publicacionService.publicar(publicacion.getId(), proveedor.obtenerId());
 

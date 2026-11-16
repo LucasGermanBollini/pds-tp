@@ -40,6 +40,16 @@ public abstract class EstadoContratacionBase implements EstadoContratacion {
         throw error("proponer una reprogramacion");
     }
 
+    @Override
+    public void aceptarReprogramacion(Contratacion ctx, String actorUserId) {
+        throw error("reprogramar");
+    }
+
+    @Override
+    public void calificar(Contratacion ctx, String actorUserId) {
+        throw error("calificar");
+    }
+
     private IllegalStateException error(String accion) {
         return new IllegalStateException("No se puede " + accion + " desde el estado " + getNombre());
     }

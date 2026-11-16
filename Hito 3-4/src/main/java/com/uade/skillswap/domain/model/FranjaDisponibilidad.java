@@ -76,6 +76,23 @@ public class FranjaDisponibilidad {
         return cupoDisponible;
     }
 
+    public int getCupoTotal() {
+        return cupoTotal;
+    }
+
+    public boolean tieneCupo() {
+        return cupoDisponible > 0;
+    }
+
+    /** Seccion 5: "No puede reservarse una franja ocupada". Dos franjas chocan si sus intervalos se pisan. */
+    public boolean seSuperponeCon(FranjaDisponibilidad otra) {
+        return otra != null && fechaHoraInicio.isBefore(otra.fechaHoraFin) && otra.fechaHoraInicio.isBefore(fechaHoraFin);
+    }
+
+    public Publicacion getPublicacion() {
+        return publicacion;
+    }
+
     /**
      * Reserva un lugar. El `synchronized` protege contra una carrera dentro
      * del mismo proceso; la columna `@Version` protege contra dos procesos

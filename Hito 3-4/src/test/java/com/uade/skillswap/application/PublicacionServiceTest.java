@@ -30,7 +30,7 @@ class PublicacionServiceTest {
 
         FranjaDisponibilidad franja = new FranjaDisponibilidad("f-1", LocalDateTime.now().plusDays(1),
                 LocalDateTime.now().plusDays(1).plusHours(1), 3);
-        service.completarDatos(borrador.getId(), "desc", new CategoriaHabilidad("cat-1", "Carrera"),
+        service.completarDatos(borrador.getId(), "prof-1", "desc", new CategoriaHabilidad("cat-1", "Carrera"),
                 Modalidad.REMOTA, 60, SkillCoins.de(500), List.of(), List.of(franja));
 
         Publicacion publicada = service.publicar(borrador.getId(), "prof-1");
@@ -69,7 +69,7 @@ class PublicacionServiceTest {
         Publicacion publicacion = service.crearBorrador(autor, titulo);
         FranjaDisponibilidad franja = new FranjaDisponibilidad("f-" + sufijoFranja, LocalDateTime.now().plusDays(1),
                 LocalDateTime.now().plusDays(1).plusHours(1), 3);
-        service.completarDatos(publicacion.getId(), "desc", new CategoriaHabilidad("cat-" + sufijoFranja, "Cat"),
+        service.completarDatos(publicacion.getId(), autor.obtenerId(), "desc", new CategoriaHabilidad("cat-" + sufijoFranja, "Cat"),
                 Modalidad.REMOTA, 60, SkillCoins.de(500), etiquetas, List.of(franja));
         return service.publicar(publicacion.getId(), autor.obtenerId());
     }

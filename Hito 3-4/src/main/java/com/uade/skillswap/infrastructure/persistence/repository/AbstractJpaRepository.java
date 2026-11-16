@@ -3,6 +3,7 @@ package com.uade.skillswap.infrastructure.persistence.repository;
 import com.uade.skillswap.domain.repository.Repositorio;
 import com.uade.skillswap.infrastructure.persistence.jpa.JPAUtil;
 import com.uade.skillswap.infrastructure.persistence.jpa.JpaContext;
+import com.uade.skillswap.application.excepcion.ConflictoConcurrenteException;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.OptimisticLockException;
 
@@ -38,7 +39,7 @@ public abstract class AbstractJpaRepository<T, ID> implements Repositorio<T, ID>
             if (em.getTransaction().isActive()) {
                 em.getTransaction().rollback();
             }
-            throw new IllegalStateException("La entidad fue modificada concurrentemente, reintentar la operacion", ex);
+            throw new ConflictoConcurrenteException("La entidad fue modificada concurrentemente, reintentar la operacion", ex);
         } catch (RuntimeException ex) {
             if (em.getTransaction().isActive()) {
                 em.getTransaction().rollback();

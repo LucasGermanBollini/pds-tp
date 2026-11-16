@@ -15,20 +15,23 @@ public class NotificacionService {
     }
 
     public List<Notificacion> listarNotificaciones(String destinatarioUserId) {
-        return notificacionRepository.buscarPorDestinatario(destinatarioUserId);
+        return notificacionRepository.buscarPorDestinatario(destinatarioUserId).stream()
+                .sorted(java.util.Comparator.comparing(Notificacion::getFecha).reversed())
+                .toList();
     }
 
     public void marcarLeida(String destinatarioUserId, String notificacionId) {
-        notificacionRepository.buscarPorId(notificacionId)
-                .filter(n -> n.getDestinatarioUserId().equals(destinatarioUserId))
-                .ifPresent(n -> {
-                    n.marcarLeida();
-                    notificacionRepository.guardar(n);
-                });
+        Notificacion notificacion = notificacionRepository.buscarPorId(notificacionId)
+                .orElseThrow(() -> new IllegalArgumentException("Notificacion inexistente: " + notificacionId));
+        if (!notificacion.getDestinatarioUserId().equals(destinatarioUserId)) {
+            throw new com.uade.skillswap.domain.model.AccesoDenegadoException("La notificacion no es tuya");
+        }
+        notificacion.marcarLeida();
+        notificacionRepository.guardar(notificacion);
     }
 
     public void marcarTodasLeidas(String destinatarioUserId) {
-        listarNotificaciones(destinatarioUserId).forEach(n -> {
+        listarNotificaciones(destinatarioUserId).stream().filter(n -> !n.isLeida()).forEach(n -> {
             n.marcarLeida();
             notificacionRepository.guardar(n);
         });

@@ -1,6 +1,7 @@
 package com.uade.skillswap.infrastructure.persistence.repository;
 
 import com.uade.skillswap.domain.model.CategoriaHabilidad;
+import com.uade.skillswap.domain.model.Habilidad;
 import com.uade.skillswap.domain.model.ElementoCatalogoBase;
 import com.uade.skillswap.domain.repository.ElementoCatalogoRepository;
 import jakarta.persistence.EntityManager;
@@ -35,6 +36,20 @@ public class JpaElementoCatalogoRepository extends AbstractJpaRepository<Element
         EntityManager em = emParaLectura();
         try {
             return em.createQuery("FROM CategoriaHabilidad", CategoriaHabilidad.class).getResultList();
+        } finally {
+            cerrarSiEsPropio(em);
+        }
+    }
+
+    @Override
+    public Optional<Habilidad> buscarHabilidadPorNombre(String nombre) {
+        EntityManager em = emParaLectura();
+        try {
+            return em.createQuery("FROM Habilidad h WHERE lower(h.nombre) = lower(:nombre)", Habilidad.class)
+                    .setParameter("nombre", nombre)
+                    .setMaxResults(1)
+                    .getResultStream()
+                    .findFirst();
         } finally {
             cerrarSiEsPropio(em);
         }

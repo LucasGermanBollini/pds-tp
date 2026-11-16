@@ -21,4 +21,9 @@ public interface EstadoContratacion {
     void cancelar(Contratacion ctx, String actorUserId, String motivo);
 
     void proponerReprogramacion(Contratacion ctx, String actorUserId, FranjaDisponibilidad nuevaFranja);
+
+    void aceptarReprogramacion(Contratacion ctx, String actorUserId);
+
+    /** Seccion 4.5: solo COMPLETADA habilita calificar; el resto lo rechaza. */
+    void calificar(Contratacion ctx, String actorUserId);
 }

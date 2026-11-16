@@ -42,7 +42,8 @@ public abstract class JpaTestSupport {
             String[] tablas = {
                     "movimientos_creditos", "wallets_skillcoins", "calificaciones", "historial_estados",
                     "contrataciones", "franjas_disponibilidad", "publicacion_habilidades", "publicaciones",
-                    "perfil_habilidades", "elementos_catalogo", "notificaciones", "perfiles"
+                    "perfil_habilidades", "perfil_intereses", "perfil_disponibilidad", "elementos_catalogo",
+                    "notificaciones", "perfiles"
             };
             for (String tabla : tablas) {
                 em.createNativeQuery("TRUNCATE TABLE " + tabla).executeUpdate();

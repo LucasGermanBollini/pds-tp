@@ -13,7 +13,9 @@ public class AfinidadHabilidadesStrategy implements RecomendacionStrategy {
 
     @Override
     public List<Publicacion> recomendar(Perfil perfil, List<Publicacion> candidatas) {
-        List<Habilidad> habilidadesPerfil = perfil.getHabilidades();
+        // habilidades que ya tiene + intereses (lo que quiere aprender), seccion 4.1
+        List<Habilidad> habilidadesPerfil = new java.util.ArrayList<>(perfil.getHabilidades());
+        habilidadesPerfil.addAll(perfil.getIntereses());
         return candidatas.stream()
                 .sorted(Comparator.comparingInt((Publicacion p) -> contarCoincidencias(p, habilidadesPerfil)).reversed())
                 .toList();

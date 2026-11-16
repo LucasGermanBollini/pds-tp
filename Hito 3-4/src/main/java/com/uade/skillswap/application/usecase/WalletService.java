@@ -28,11 +28,16 @@ public class WalletService {
     }
 
     public List<MovimientoCreditos> listarMovimientos(String titularUserId) {
-        return movimientoCreditosRepository.buscarPorWallet(obtenerWallet(titularUserId).getId());
+        return movimientoCreditosRepository.buscarPorWallet(obtenerWallet(titularUserId).getId()).stream()
+                .sorted(java.util.Comparator.comparing(MovimientoCreditos::getFecha).reversed())
+                .toList();
     }
 
     /** Seccion 10 (Mock UI Kit): "Wallet de SkillCoins... créditos promocionales" para poder probar la demo. */
     public SkillCoins acreditarDemo(String titularUserId, long importe) {
+        if (importe <= 0) {
+            throw new IllegalArgumentException("El importe a acreditar debe ser positivo");
+        }
         WalletSkillCoins wallet = obtenerWallet(titularUserId);
         SkillCoins monto = SkillCoins.de(importe);
         wallet.acreditar(monto);

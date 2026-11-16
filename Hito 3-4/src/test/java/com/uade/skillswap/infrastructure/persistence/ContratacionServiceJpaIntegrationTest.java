@@ -39,8 +39,7 @@ class ContratacionServiceJpaIntegrationTest extends JpaTestSupport {
         JpaUnitOfWork unitOfWork = new JpaUnitOfWork();
         List<ObservadorDeEstado> observadores = List.of(
                 new RegistradorHistorialObserver(historialRepository),
-                new NotificadorObserver(publicacionRepository, contratacionRepository, notificacionRepository,
-                        perfilRepository, new CanalNotificacionFactoryImpl()));
+                new NotificadorObserver(notificacionRepository, perfilRepository, new CanalNotificacionFactoryImpl()));
 
         PublicacionService publicacionService = new PublicacionService(publicacionRepository, catalogoRepository, observadores);
         ContratacionService contratacionService = new ContratacionService(contratacionRepository, publicacionRepository,
@@ -56,7 +55,7 @@ class ContratacionServiceJpaIntegrationTest extends JpaTestSupport {
         Publicacion publicacion = publicacionService.crearBorrador(ada, "Mentoria de entrevistas");
         FranjaDisponibilidad franja = new FranjaDisponibilidad(java.util.UUID.randomUUID().toString(),
                 LocalDateTime.now().plusDays(2), LocalDateTime.now().plusDays(2).plusHours(1), 1);
-        publicacionService.completarDatos(publicacion.getId(), "desc", categoria, Modalidad.REMOTA, 60,
+        publicacionService.completarDatos(publicacion.getId(), "prof-ada", "desc", categoria, Modalidad.REMOTA, 60,
                 SkillCoins.de(300), List.of(), List.of(franja));
         publicacion = publicacionService.publicar(publicacion.getId(), "prof-ada");
         FranjaDisponibilidad franjaPersistida = publicacion.getFranjas().get(0);
@@ -73,7 +72,8 @@ class ContratacionServiceJpaIntegrationTest extends JpaTestSupport {
         assertEquals(SkillCoins.de(700), walletRepository.buscarPorTitular("cli-beto").orElseThrow().getSaldo());
         assertEquals(SkillCoins.de(300), walletRepository.buscarPorTitular("prof-ada").orElseThrow().getSaldo());
         assertEquals(5.0, perfilRepository.buscarPorId("prof-ada").orElseThrow().getReputacionPromedio());
-        assertEquals(4, historialRepository.buscarPorEntidad("CONTRATACION", contratacion.getId()).size());
+        // solicitud (null -> PENDIENTE) + aceptar + pagar + iniciar + completar
+        assertEquals(5, historialRepository.buscarPorEntidad("CONTRATACION", contratacion.getId()).size());
     }
 
     @Test
@@ -90,8 +90,7 @@ class ContratacionServiceJpaIntegrationTest extends JpaTestSupport {
         JpaUnitOfWork unitOfWork = new JpaUnitOfWork();
         List<ObservadorDeEstado> observadores = List.of(
                 new RegistradorHistorialObserver(historialRepository),
-                new NotificadorObserver(publicacionRepository, contratacionRepository, notificacionRepository,
-                        perfilRepository, new CanalNotificacionFactoryImpl()));
+                new NotificadorObserver(notificacionRepository, perfilRepository, new CanalNotificacionFactoryImpl()));
 
         PublicacionService publicacionService = new PublicacionService(publicacionRepository, catalogoRepository, observadores);
         ContratacionService contratacionService = new ContratacionService(contratacionRepository, publicacionRepository,
@@ -107,7 +106,7 @@ class ContratacionServiceJpaIntegrationTest extends JpaTestSupport {
         Publicacion publicacion = publicacionService.crearBorrador(ada, "Mentoria de entrevistas");
         FranjaDisponibilidad franja = new FranjaDisponibilidad(java.util.UUID.randomUUID().toString(),
                 LocalDateTime.now().plusDays(2), LocalDateTime.now().plusDays(2).plusHours(1), 1);
-        publicacionService.completarDatos(publicacion.getId(), "desc", categoria, Modalidad.REMOTA, 60,
+        publicacionService.completarDatos(publicacion.getId(), "prof-ada", "desc", categoria, Modalidad.REMOTA, 60,
                 SkillCoins.de(300), List.of(), List.of(franja));
         Publicacion publicada = publicacionService.publicar(publicacion.getId(), "prof-ada");
         FranjaDisponibilidad franjaPersistida = publicada.getFranjas().get(0);

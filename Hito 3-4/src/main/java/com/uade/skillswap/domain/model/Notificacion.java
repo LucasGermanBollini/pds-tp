@@ -27,6 +27,14 @@ public class Notificacion {
     @Column(name = "evento_origen")
     private String eventoOrigen;
 
+    /** Que paso (SOLICITUD_RECIBIDA, CAMBIO_ESTADO, REPROGRAMACION_...), para mostrar un titulo adecuado. */
+    @Column(name = "tipo_evento", length = 40)
+    private String tipoEvento;
+
+    /** Id de la publicacion/contratacion a la que refiere (para poder navegar desde la bandeja). */
+    @Column(name = "entidad_id", length = 36)
+    private String entidadId;
+
     @Column(nullable = false)
     private LocalDateTime fecha;
 
@@ -43,6 +51,21 @@ public class Notificacion {
         this.eventoOrigen = eventoOrigen;
         this.fecha = fecha;
         this.leida = false;
+    }
+
+    public Notificacion(String id, String destinatarioUserId, TipoCanalNotificacion canal, String mensaje,
+                         String eventoOrigen, String tipoEvento, String entidadId, LocalDateTime fecha) {
+        this(id, destinatarioUserId, canal, mensaje, eventoOrigen, fecha);
+        this.tipoEvento = tipoEvento;
+        this.entidadId = entidadId;
+    }
+
+    public String getTipoEvento() {
+        return tipoEvento;
+    }
+
+    public String getEntidadId() {
+        return entidadId;
     }
 
     public String getId() {

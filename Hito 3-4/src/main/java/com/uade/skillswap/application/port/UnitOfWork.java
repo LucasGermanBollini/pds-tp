@@ -12,6 +12,14 @@ import java.util.function.Supplier;
  */
 public interface UnitOfWork {
 
+    /** Sin transaccion: ejecuta directo. Para armar casos de uso sobre repositorios en memoria. */
+    UnitOfWork DIRECTO = new UnitOfWork() {
+        @Override
+        public <T> T ejecutar(Supplier<T> accion) {
+            return accion.get();
+        }
+    };
+
     <T> T ejecutar(Supplier<T> accion);
 
     default void ejecutar(Runnable accion) {

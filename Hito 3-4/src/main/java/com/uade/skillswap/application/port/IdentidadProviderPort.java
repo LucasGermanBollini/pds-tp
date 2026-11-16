@@ -9,6 +9,6 @@ package com.uade.skillswap.application.port;
  */
 public interface IdentidadProviderPort {
 
-    /** Lanza IllegalArgumentException si el userId no es un usuario activo conocido por la identidad externa. */
+    /** Lanza AccesoDenegadoException si el userId no es un usuario activo conocido por la identidad externa. */
     void validarUsuarioActivo(String userId);
 }
