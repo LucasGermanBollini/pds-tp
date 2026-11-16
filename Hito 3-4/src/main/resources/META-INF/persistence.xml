@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<persistence xmlns="https://jakarta.ee/xml/ns/persistence"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xsi:schemaLocation="https://jakarta.ee/xml/ns/persistence https://jakarta.ee/xml/ns/persistence/persistence_3_0.xsd"
+             version="3.0">
+
+    <!--
+        El esquema lo crea y versiona Flyway (src/main/resources/db/migration),
+        no Hibernate: por eso hbm2ddl.auto=validate (chequea que las entidades
+        coincidan con las tablas, pero nunca genera DDL). Ver seccion 8 del TP.
+    -->
+    <persistence-unit name="skillswapPU" transaction-type="RESOURCE_LOCAL">
+        <provider>org.hibernate.jpa.HibernatePersistenceProvider</provider>
+
+        <class>com.uade.skillswap.domain.model.Perfil</class>
+        <class>com.uade.skillswap.domain.model.ElementoCatalogoBase</class>
+        <class>com.uade.skillswap.domain.model.Habilidad</class>
+        <class>com.uade.skillswap.domain.model.CategoriaHabilidad</class>
+        <class>com.uade.skillswap.domain.model.FranjaDisponibilidad</class>
+        <class>com.uade.skillswap.domain.model.Publicacion</class>
+        <class>com.uade.skillswap.domain.model.Contratacion</class>
+        <class>com.uade.skillswap.domain.model.WalletSkillCoins</class>
+        <class>com.uade.skillswap.domain.model.MovimientoCreditos</class>
+        <class>com.uade.skillswap.domain.model.Calificacion</class>
+        <class>com.uade.skillswap.domain.model.Notificacion</class>
+        <class>com.uade.skillswap.domain.model.HistorialEstado</class>
+
+        <properties>
+            <property name="jakarta.persistence.jdbc.driver" value="com.mysql.cj.jdbc.Driver"/>
+            <property name="jakarta.persistence.jdbc.url"
+                       value="jdbc:mysql://localhost:3306/skillswap?serverTimezone=UTC&amp;useSSL=false&amp;allowPublicKeyRetrieval=true"/>
+            <property name="jakarta.persistence.jdbc.user" value="skillswap"/>
+            <property name="jakarta.persistence.jdbc.password" value="skillswap_dev_2024"/>
+
+            <property name="hibernate.dialect" value="org.hibernate.dialect.MySQLDialect"/>
+            <property name="hibernate.hbm2ddl.auto" value="validate"/>
+            <property name="hibernate.show_sql" value="true"/>
+            <property name="hibernate.format_sql" value="true"/>
+        </properties>
+    </persistence-unit>
+
+    <!--
+        Misma estructura de entidades sobre H2 en modo MySQL, para poder
+        correr tests de persistencia sin depender de un MySQL real
+        (seccion 12: "Pruebas de persistencia con una base compatible").
+    -->
+    <persistence-unit name="skillswapTestPU" transaction-type="RESOURCE_LOCAL">
+        <provider>org.hibernate.jpa.HibernatePersistenceProvider</provider>
+
+        <class>com.uade.skillswap.domain.model.Perfil</class>
+        <class>com.uade.skillswap.domain.model.ElementoCatalogoBase</class>
+        <class>com.uade.skillswap.domain.model.Habilidad</class>
+        <class>com.uade.skillswap.domain.model.CategoriaHabilidad</class>
+        <class>com.uade.skillswap.domain.model.FranjaDisponibilidad</class>
+        <class>com.uade.skillswap.domain.model.Publicacion</class>
+        <class>com.uade.skillswap.domain.model.Contratacion</class>
+        <class>com.uade.skillswap.domain.model.WalletSkillCoins</class>
+        <class>com.uade.skillswap.domain.model.MovimientoCreditos</class>
+        <class>com.uade.skillswap.domain.model.Calificacion</class>
+        <class>com.uade.skillswap.domain.model.Notificacion</class>
+        <class>com.uade.skillswap.domain.model.HistorialEstado</class>
+
+        <properties>
+            <property name="jakarta.persistence.jdbc.driver" value="org.h2.Driver"/>
+            <property name="jakarta.persistence.jdbc.url"
+                       value="jdbc:h2:mem:skillswap_test;MODE=MySQL;DB_CLOSE_DELAY=-1"/>
+            <property name="jakarta.persistence.jdbc.user" value="sa"/>
+            <property name="jakarta.persistence.jdbc.password" value=""/>
+
+            <property name="hibernate.dialect" value="org.hibernate.dialect.H2Dialect"/>
+            <property name="hibernate.hbm2ddl.auto" value="none"/>
+            <property name="hibernate.show_sql" value="false"/>
+        </properties>
+    </persistence-unit>
+</persistence>
