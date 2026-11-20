@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><title>Informe Final - SkillSwap</title>
+<style>
+@page { size: A4; margin: 18mm 16mm 18mm 16mm; }
+body { font-family: "DejaVu Sans", Arial, sans-serif; font-size: 10.5pt; line-height: 1.45; color: #1d2733; }
+h1 { font-size: 22pt; margin: 0 0 4mm; color: #16324f; }
+h2 { font-size: 15pt; color: #16324f; border-bottom: 2px solid #16324f; padding-bottom: 2px; margin-top: 9mm; page-break-after: avoid; }
+h3 { font-size: 11.5pt; color: #16324f; margin: 6mm 0 2mm; page-break-after: avoid; }
+table { border-collapse: collapse; width: 100%; margin: 2mm 0 4mm; font-size: 9.5pt; page-break-inside: auto; }
+th, td { border: 1px solid #b9c4cf; padding: 4px 6px; vertical-align: top; text-align: left; }
+th { background: #e8eef4; }
+tr { page-break-inside: avoid; }
+code { font-family: "DejaVu Sans Mono", monospace; font-size: 8.8pt; background: #f1f4f7; padding: 0 2px; }
+.portada { height: 250mm; display: flex; flex-direction: column; justify-content: center; page-break-after: always; }
+.portada .sub { font-size: 13pt; color: #44607d; }
+.decision { border: 1px solid #c8d3dd; border-left: 5px solid #16324f; padding: 3mm 4mm; margin: 4mm 0; page-break-inside: avoid; }
+.decision h3 { margin-top: 0; }
+.decision p { margin: 1.2mm 0; }
+.k { font-weight: bold; color: #16324f; }
+img { max-width: 100%; border: 1px solid #ccd; }
+.fig { text-align: center; font-size: 9pt; color: #555; margin: 3mm 0; page-break-inside: avoid; }
+.salto { page-break-before: always; }
+.ok { color: #16784a; font-weight: bold; }
+</style></head><body>
+
+<div class="portada">
+  <div class="sub">Procesos de Desarrollo de Software · UADE</div>
+  <h1>SkillSwap — Informe final de decisiones de diseño</h1>
+  <div class="sub">Trabajo Práctico Obligatorio · Hito 4 (Producto)</div>
+  <p style="margin-top:12mm">Marketplace de talento, mentorías y proyectos con créditos ficticios (SkillCoins).<br>
+  Backend en Java 17, Hibernate/JPA, MySQL y Flyway, sin Spring Boot, conectado a la interfaz Swing provista por la cátedra.</p>
+  <p style="margin-top:10mm"><b>Integrantes:</b> ______________________________________________</p>
+  <p><b>Fecha de entrega:</b> ________________</p>
+</div>
+
+<h2>1. Resumen</h2>
+<p>Este informe documenta la versión final del sistema y las decisiones de diseño que lo sostienen, con el formato que pide la sección 13 de la consigna: para cada decisión, el <b>problema</b>, la <b>alternativa elegida</b>, sus <b>consecuencias</b> y la <b>evidencia</b> en el código y en las pruebas.</p>
+<table>
+<tr><th>Indicador</th><th>Valor</th></tr>
+<tr><td>Clases de producción (sin contar la interfaz de la cátedra)</td><td>159 archivos Java en 4 capas + configuración</td></tr>
+<tr><td>Pruebas automatizadas</td><td><span class="ok">107 tests, todos en verde</span> (unitarios, casos de uso, controllers, persistencia e integración)</td></tr>
+<tr><td>Cobertura de líneas (JaCoCo)</td><td>Dominio 92,3 % · Aplicación 94,0 % · Infraestructura 89,2 % · Presentación 82,7 % · Total 86,7 %</td></tr>
+<tr><td>Patrones de diseño aplicados</td><td>9: State, Strategy, Observer, Adapter, Simple Factory, Decorator, Composite, Facade y Singleton</td></tr>
+<tr><td>Modelo UML</td><td><code>docs/SkillSwap - Modelo Final.mdj</code> (StarUML), 9 diagramas</td></tr>
+</table>
+
+<h3>Cumplimiento de la consigna</h3>
+<table>
+<tr><th style="width:24%">Sección</th><th>Cómo se cubre</th></tr>
+<tr><td>4.1 Perfiles y reputación</td><td>Alta validada contra el servicio de identidad (puerto + Adapter), tipo de perfil (profesional/organización), biografía, zona horaria, habilidades, intereses, disponibilidad semanal, canal de notificación. Perfil público por Facade. Reputación recalculada desde calificaciones; no tiene setter.</td></tr>
+<tr><td>4.2 Publicaciones</td><td>Ofertas (profesional) y desafíos (organización) con título, descripción, categoría, modalidad, duración, cupo (por franja), precio y etiquetas. Cinco estados con State; editable solo en BORRADOR/PAUSADA; cancelar exige motivo; publicar exige título, categoría, precio no negativo y una franja.</td></tr>
+<tr><td>4.3 Búsqueda y recomendación</td><td>Filtros por texto, categoría, modalidad, rango de precio, habilidad, reputación mínima y tipo; orden por relevancia, reputación, precio y fecha; paginación en la base. Dos estrategias de recomendación intercambiables.</td></tr>
+<tr><td>4.4 Solicitud, reserva y contratación</td><td>Solicitud con mensaje, franja y objetivo; aceptación que bloquea cupo en una transacción; pago sin saldo negativo ni doble cobro; reprogramación con acuerdo de ambas partes; calificación una vez por parte.</td></tr>
+<tr><td>4.5 Estados de una contratación</td><td>Siete estados con State; un test recorre cada estado contra cada acción.</td></tr>
+<tr><td>4.6 Notificaciones</td><td>Observer + Simple Factory + Adapter: solicitud, aceptación, pago, reprogramación, cancelación y sesión completada llegan por el canal elegido por cada usuario (email, push o interna).</td></tr>
+<tr><td>5 Reglas de negocio</td><td>Las diez reglas están en el dominio o en el caso de uso y tienen tests (ver sección 6).</td></tr>
+<tr><td>6 Arquitectura</td><td>Clean Architecture: dominio, aplicación, infraestructura, presentación y un Composition Root.</td></tr>
+<tr><td>7 Patrones</td><td>Nueve patrones, cada uno ligado a una variación concreta y con tests.</td></tr>
+<tr><td>8 Persistencia</td><td>JPA/Hibernate + MySQL, migraciones Flyway, restricciones, índices, límites transaccionales, sin N+1, datos demo y optimistic locking.</td></tr>
+<tr><td>9 Controllers</td><td>Los 13 controllers/operaciones de la tabla, más los complementarios; delgados, sin SQL, con errores uniformes y command objects.</td></tr>
+<tr><td>10 Mock UI Kit</td><td>La interfaz de la cátedra conectada mediante adaptadores; login simulado; errores mostrados en diálogos.</td></tr>
+<tr><td>12 Pruebas y calidad</td><td>107 tests, casos negativos pedidos, cobertura mayor al 80 % en dominio y aplicación (verificada por JaCoCo en cada <code>mvn test</code>), README reproducible.</td></tr>
+<tr><td>15 Casos de aceptación</td><td>Los diez casos tienen al menos un test que los ejercita (tabla de la sección 6).</td></tr>
+</table>
+
+<h2 class="salto">2. Arquitectura</h2>
+<p>La solución respeta la regla de dependencias de Clean Architecture (sección 6): todas las dependencias apuntan hacia el dominio. La capa de aplicación define <b>puertos</b> (interfaces) para todo lo externo —persistencia, transacciones, identidad y canales de notificación— y la infraestructura los implementa. La interfaz de la cátedra solo conoce las interfaces <code>UiControllers</code>; nunca ve repositorios ni entidades JPA.</p>
+<div class="fig"><img src="./diagramas/diagrama-0.png"><br>Diagrama 0 — Capas y dependencias.</div>
+<table>
+<tr><th>Capa</th><th>Paquetes</th><th>Contiene</th><th>No conoce</th></tr>
+<tr><td>Dominio</td><td><code>domain.model</code>, <code>.state</code>, <code>.observer</code>, <code>domain.repository</code></td><td>Entidades, value objects (<code>SkillCoins</code>, <code>DisponibilidadSemanal</code>), estados, estrategias, eventos, reglas y puertos de repositorio</td><td>Interfaz, casos de uso, SDKs</td></tr>
+<tr><td>Aplicación</td><td><code>application.usecase</code>, <code>.port</code>, <code>.dto</code></td><td>Casos de uso, Facade, puertos de transacción/identidad/notificación, DTOs</td><td>Controllers, JPA, SDKs</td></tr>
+<tr><td>Infraestructura</td><td><code>infrastructure.*</code></td><td>Repositorios JPA y en memoria, <code>JpaUnitOfWork</code>, <code>JPAUtil</code>, adaptadores de email/push/identidad, observer de notificaciones</td><td>Decisiones de negocio</td></tr>
+<tr><td>Presentación</td><td><code>presentation.controller</code>, <code>presentation.ui</code></td><td>Controllers de la sección 9, <code>Resultado</code>, adaptadores al Mock UI Kit</td><td>SQL, reglas internas</td></tr>
+<tr><td>Configuración</td><td><code>config</code></td><td><code>AppFactory</code> (Composition Root), arranque de la base, datos demo</td><td>—</td></tr>
+</table>
+<p>La prueba más clara de que la arquitectura cumple su promesa: los mismos casos de uso corren sobre repositorios en memoria y sobre JPA cambiando una sola línea (<code>Repositorios.enMemoria()</code> por <code>Repositorios.jpa()</code>), y la suite los ejercita de las dos formas.</p>
+
+<h2 class="salto">3. Decisiones de diseño</h2>
+
+<div class="decision"><h3>D1. Máquinas de estado con el patrón State</h3>
+<p><span class="k">Problema.</span> Publicación (5 estados) y Contratación (7 estados) cambian de comportamiento según su estado, y la consigna exige que el dominio rechace las transiciones inválidas. Con <code>if/switch</code> sobre un <code>String</code>, cada acción nueva toca todos los casos.</p>
+<p><span class="k">Alternativa elegida.</span> State: una interfaz por máquina (<code>EstadoPublicacion</code>, <code>EstadoContratacion</code>), una clase base que rechaza todo por defecto y un estado concreto por cada estado de la tabla, que habilita solo sus transiciones. La entidad (Context) delega. En la base se guarda el nombre del estado y una Simple Factory reconstruye el objeto en <code>@PostLoad</code>.</p>
+<p><span class="k">Consecuencias.</span> Agregar un estado es agregar una clase (Open/Closed). Cada regla de transición está en un solo lugar (alta cohesión). Hay más clases pequeñas.</p>
+<p><span class="k">Evidencia.</span> <code>domain/model/state/*</code>; <code>MatrizDeEstadosTest</code> prueba cada estado contra cada acción.</p></div>
+
+<div class="decision"><h3>D2. Permisos validados en el dominio (Information Expert)</h3>
+<p><span class="k">Problema.</span> Sección 5: "los controllers que modifican información deben validar permisos a partir del userId". En la versión anterior solo se validaba que el usuario existiera: un cliente podía aceptar su propia solicitud.</p>
+<p><span class="k">Alternativa elegida.</span> Dos niveles. El controller valida, mediante el puerto de identidad, que el <code>userId</code> sea un usuario activo. Qué puede hacer cada uno lo decide la entidad que tiene la información (GRASP Information Expert): <code>Publicacion.verificarAutor</code>; <code>Contratacion</code> exige proveedor para aceptar/rechazar/iniciar/completar, cliente para pagar y participante para cancelar, reprogramar y calificar. La violación se expresa con <code>AccesoDenegadoException</code>.</p>
+<p><span class="k">Consecuencias.</span> La regla no se puede saltear desde ninguna entrada (interfaz, consola o test), porque está en la entidad. El botón único "Avanzar estado" del kit obliga a cambiar de usuario para jugar cada rol; para eso se agregó el login simulado.</p>
+<p><span class="k">Evidencia.</span> <code>Contratacion</code>, <code>Publicacion</code>; <code>PermisosTest</code>, <code>ContratacionControllerTest.permisosSeRespetanEnCadaPaso</code>.</p></div>
+
+<div class="decision"><h3>D3. Recomendación con Strategy y Simple Factory</h3>
+<p><span class="k">Problema.</span> Se piden dos estrategias de recomendación intercambiables, y cambiar de estrategia no debe modificar el caso de uso (sección 15).</p>
+<p><span class="k">Alternativa elegida.</span> <code>RecomendacionStrategy</code> con <code>AfinidadHabilidadesStrategy</code> (habilidades e intereses del perfil contra las etiquetas) y <code>PopularidadRecienteStrategy</code> (cantidad de solicitudes). <code>RecomendacionStrategyFactory</code> resuelve la estrategia por nombre y <code>MotorRecomendacion</code> es el contexto.</p>
+<p><span class="k">Consecuencias.</span> Una estrategia nueva es una clase más y una línea en la fábrica. El caso de uso no tiene condicionales.</p>
+<p><span class="k">Evidencia.</span> <code>PublicacionServiceTest.cambiarLaEstrategiaDeRecomendacionNoRequiereTocarElCasoDeUso</code>, <code>BusquedaControllerTest.recomiendaConDosEstrategiasIntercambiables…</code>.</p></div>
+
+<div class="decision"><h3>D4. Política de cancelación con Strategy</h3>
+<p><span class="k">Problema.</span> El reintegro (100 %, 50 % o 0 %) depende de la anticipación, que debe ser configurable.</p>
+<p><span class="k">Alternativa elegida.</span> <code>PoliticaCancelacionStrategy</code> con <code>PoliticaCancelacionEstandar</code> (48 h / 24 h) y <code>PoliticaCancelacionFlexible</code>. La política por defecto se inyecta en <code>AppFactory</code>, y también se puede pasar una distinta por cancelación.</p>
+<p><span class="k">Consecuencias.</span> Cambiar las ventanas es cambiar de estrategia; el caso de uso no se toca. El reintegro genera movimientos en las dos wallets dentro de la misma transacción.</p>
+<p><span class="k">Evidencia.</span> <code>PoliticaCancelacionTest</code>; <code>ContratacionServiceTest.cancelarConDosPoliticasDistintasDaReintegrosDistintos</code>.</p></div>
+
+<div class="decision"><h3>D5. Promociones acumulables con Decorator</h3>
+<p><span class="k">Problema.</span> Las promociones pueden combinarse y modificar el precio, pero nunca producir un total negativo.</p>
+<p><span class="k">Alternativa elegida.</span> <code>Cotizable</code> (componente), <code>PrecioPublicacion</code> (componente concreto) y <code>PromocionDecorator</code> con <code>DescuentoPorcentual</code> y <code>DescuentoMontoFijo</code>, encadenables. El value object <code>SkillCoins</code> no admite valores negativos y la resta de promociones se trunca en cero.</p>
+<p><span class="k">Consecuencias.</span> Las combinaciones no generan subclases nuevas. El caso de uso de pago recibe un <code>Cotizable</code> y no sabe cuántas promociones tiene.</p>
+<p><span class="k">Evidencia.</span> <code>DecoratorPrecioTest</code>.</p></div>
+
+<div class="decision"><h3>D6. Catálogo jerárquico con Composite</h3>
+<p><span class="k">Problema.</span> Las categorías contienen subcategorías y habilidades, y se necesita recorrerlas de forma uniforme.</p>
+<p><span class="k">Alternativa elegida.</span> <code>ElementoCatalogo</code> (componente), <code>Habilidad</code> (hoja) y <code>CategoriaHabilidad</code> (compuesto), persistidos con herencia <code>SINGLE_TABLE</code> y una columna discriminadora, como en el ejemplo de la cátedra.</p>
+<p><span class="k">Consecuencias.</span> Agregar niveles de categorías no cambia el código. La tabla única tiene columnas que algunas filas no usan (se acepta: el árbol es chico).</p>
+<p><span class="k">Evidencia.</span> <code>CompositeCatalogoTest</code>, <code>PublicacionPersistenceTest</code>.</p></div>
+
+<div class="decision"><h3>D7. Eventos con Observer: historial inmutable y notificaciones</h3>
+<p><span class="k">Problema.</span> Cada transición debe quedar en un historial inmutable (fecha, actor y motivo) y los eventos relevantes deben notificarse, sin que las entidades conozcan esas integraciones.</p>
+<p><span class="k">Alternativa elegida.</span> <code>Publicacion</code> y <code>Contratacion</code> son Subjects y publican un <code>CambioEstadoEvento</code> con tipo (solicitud, cambio de estado, reprogramación), descripción y destinatarios. <code>RegistradorHistorialObserver</code> persiste el historial y <code>NotificadorObserver</code> notifica. Los observers se inyectan desde afuera porque el notificador vive en infraestructura.</p>
+<p><span class="k">Consecuencias.</span> Sumar una reacción (por ejemplo, analítica) es sumar un observer. Como el evento ya trae los destinatarios, el notificador no consulta repositorios de publicaciones ni de contrataciones (bajo acoplamiento). Los observers son <code>@Transient</code> y se reconectan al cargar cada entidad.</p>
+<p><span class="k">Evidencia.</span> <code>ContratacionControllerTest.laSolicitudLeLlegaAlProveedorYSeRegistraEnElHistorial</code>, <code>ReprogramacionTest</code>.</p></div>
+
+<div class="decision"><h3>D8. Canales de notificación e identidad con Adapter y Simple Factory</h3>
+<p><span class="k">Problema.</span> Email, push y la identidad externa son proveedores reemplazables, con APIs que no coinciden con lo que la aplicación necesita.</p>
+<p><span class="k">Alternativa elegida.</span> Puertos en aplicación (<code>CanalNotificacionPort</code>, <code>IdentidadProviderPort</code>) y adaptadores en infraestructura que traducen a los SDK simulados (<code>EmailExternoSdk</code>: dirección + asunto + cuerpo; <code>PushExternoSdk</code>: token + payload; <code>IdentidadExternaSdk</code>: códigos de estado). <code>CanalNotificacionFactoryImpl</code> elige el adaptador según el canal preferido de cada usuario.</p>
+<p><span class="k">Consecuencias.</span> Cambiar de proveedor es escribir otro adaptador. Un mismo evento puede salir por dos canales distintos, uno por cada parte.</p>
+<p><span class="k">Evidencia.</span> <code>AdaptadoresTest</code>; <code>ContratacionControllerTest.unMismoEventoSalePorDosCanales…</code> (caso de aceptación de la sección 15).</p></div>
+
+<div class="decision"><h3>D9. Perfil público con Facade</h3>
+<p><span class="k">Problema.</span> El perfil público (4.1) combina datos de cuatro repositorios: perfil, publicaciones activas, contrataciones (historial) y calificaciones.</p>
+<p><span class="k">Alternativa elegida.</span> <code>PerfilPublicoFacade.verPerfilPublico(id)</code> coordina esas consultas y devuelve un único <code>PerfilPublicoDTO</code>.</p>
+<p><span class="k">Consecuencias.</span> El controller y la interfaz no conocen ninguno de los cuatro repositorios. Si cambia el armado del resumen, cambia solo la fachada.</p>
+<p><span class="k">Evidencia.</span> <code>PerfilControllerTest.elPerfilPublicoMuestraReputacionPublicacionesActivasEHistorial</code>.</p></div>
+
+<div class="decision"><h3>D10. Transacciones y concurrencia: UnitOfWork + optimistic locking</h3>
+<p><span class="k">Problema.</span> Aceptar, pagar, cancelar y reprogramar tocan varias filas (estado, cupo, dos wallets, movimientos), que deben guardarse juntas. Además, dos aceptaciones simultáneas no deben consumir el mismo último cupo.</p>
+<p><span class="k">Alternativa elegida.</span> Puerto <code>UnitOfWork</code>; <code>JpaUnitOfWork</code> abre la transacción y la comparte por hilo (<code>JpaContext</code>), así que los repositorios participan sin saberlo. <code>FranjaDisponibilidad</code> tiene <code>@Version</code>: si dos transacciones leen la misma versión, la segunda falla al confirmar y se traduce a <code>ConflictoConcurrenteException</code> (código <code>CONFLICTO_CONCURRENTE</code>). En el pago, el saldo se valida y la transición se pide <i>antes</i> de mover dinero, así un pago rechazado o duplicado no toca ningún saldo.</p>
+<p><span class="k">Consecuencias.</span> El caso de uso expresa su límite transaccional sin depender de JPA. Ante un conflicto, el usuario reintenta.</p>
+<p><span class="k">Evidencia.</span> <code>OptimisticLockingTest</code>, <code>RecorridoJpaIntegrationTest.dosTransaccionesSobreElUltimoCupo…</code>, <code>ContratacionControllerTest.doblePagoNoCobraDosVeces</code> y <code>saldoInsuficienteNoModificaSaldosNiEstado</code>.</p></div>
+
+<div class="decision"><h3>D11. Búsqueda paginada en la base, sin N+1</h3>
+<p><span class="k">Problema.</span> La búsqueda filtraba en memoria con pocos filtros y no paginaba.</p>
+<p><span class="k">Alternativa elegida.</span> Un query object <code>CriteriosBusqueda</code> (siete filtros, orden y página) que entiende cualquier implementación del puerto. En JPA se resuelve en tres consultas: ids con filtros, <code>ORDER BY</code> y <code>LIMIT/OFFSET</code>; un <code>COUNT</code>; y la carga de esas publicaciones con <code>JOIN FETCH</code> de autor, categoría y franjas. Las demás colecciones se cargan por lotes (<code>hibernate.default_batch_fetch_size</code>). La relevancia suma 3 puntos por título, 2 por etiqueta y 1 por descripción, y desempata por popularidad y reputación.</p>
+<p><span class="k">Consecuencias.</span> Paginar ids evita paginar en memoria cuando hay <code>JOIN FETCH</code> de colecciones. La consulta dinámica es más larga que un filtro en Java, pero escala. Las reglas están documentadas en <code>ReglasDeBusqueda</code>, que usa la versión en memoria.</p>
+<p><span class="k">Evidencia.</span> <code>BusquedaControllerTest</code> (filtros, órdenes, paginación); <code>RecorridoJpaIntegrationTest.laBusquedaFiltraOrdenaYPaginaEnLaBaseSinNMasUno</code> verifica que traer 6 resultados cuesta las mismas consultas que traer 2.</p></div>
+
+<div class="decision"><h3>D12. Reprogramación de común acuerdo</h3>
+<p><span class="k">Problema.</span> Sección 4.4: la reserva puede reprogramarse antes de comenzar si <i>ambas partes</i> aceptan. Antes, una sola parte la aplicaba directamente.</p>
+<p><span class="k">Alternativa elegida.</span> Una parte propone una franja de la misma publicación con cupo (se guarda la franja propuesta y quién la propuso). La <i>otra</i> parte la acepta, y entonces se mueve el cupo de una franja a la otra en una transacción, o la rechaza. Solo ACEPTADA y CONFIRMADA lo admiten (State). Se verifica que la nueva franja no choque con la agenda del cliente. Cada paso se notifica.</p>
+<p><span class="k">Consecuencias.</span> Una propuesta pendiente no reserva cupo; si al aceptarla ya no hay lugar, falla con un mensaje claro. Cancelar descarta la propuesta.</p>
+<p><span class="k">Evidencia.</span> <code>ReprogramacionTest</code>, <code>ContratacionControllerTest.reprogramacionDeComunAcuerdo</code>, <code>RecorridoJpaIntegrationTest</code>.</p></div>
+
+<div class="decision"><h3>D13. Controllers delgados, errores uniformes y adaptación al Mock UI Kit</h3>
+<p><span class="k">Problema.</span> La sección 9 pide controllers delgados con manejo uniforme de errores, y la interfaz de la cátedra impone su propio contrato (<code>UiControllers</code>), más chico y con un único "avanzar".</p>
+<p><span class="k">Alternativa elegida.</span> Controllers propios (Perfil, Publicación, Búsqueda, Recomendación, Contratación, Calificación, Notificación, Wallet) que heredan de <code>ControllerBase</code>: validan la identidad, delegan en el caso de uso, devuelven DTOs y traducen cada excepción a un <code>Resultado</code> con código estable. Los <code>*UiController</code> son Adapters del contrato del kit hacia estos controllers. Un proxy (<code>ErroresEnDialogo</code>) muestra los errores en un diálogo sin modificar las pantallas. Los listados se devuelven paginados (<code>Pagina&lt;T&gt;</code>).</p>
+<p><span class="k">Consecuencias.</span> Las mismas operaciones sirven a la interfaz, a la demo por consola y a los tests. Del kit solo se cambiaron dos cosas: el usuario activo pasó de constante a parámetro (login simulado) y se corrigió un error de layout en la fila de contrataciones.</p>
+<p><span class="k">Evidencia.</span> <code>ManejoDeErroresTest</code>, <code>UiAdaptadoresTest</code>, capturas en <code>docs/capturas</code>.</p></div>
+
+<div class="decision"><h3>D14. Anotaciones JPA en el dominio y Singleton de JPAUtil</h3>
+<p><span class="k">Problema.</span> Clean Architecture pide un dominio independiente de JPA. Mantener clases espejo (entidad de dominio + entidad JPA + mapeo) duplica cada clase.</p>
+<p><span class="k">Alternativa elegida.</span> Las anotaciones viven en <code>domain.model</code> (el mismo compromiso que el ejemplo Magic Café de las clases 9 a 13). El dominio no usa <code>EntityManager</code> ni consultas: solo metadatos. <code>JPAUtil</code> es el único punto que crea la <code>EntityManagerFactory</code> (Singleton): crearla es costoso y debe existir una sola por unidad de persistencia.</p>
+<p><span class="k">Consecuencias.</span> Hay menos código y un único modelo. El costo es que el dominio depende de <code>jakarta.persistence</code> en compilación. Del Singleton: estado global (los tests lo cierran y reinician explícitamente) y una única base por proceso.</p>
+<p><span class="k">Evidencia.</span> <code>persistence.xml</code> con <code>hbm2ddl.auto=validate</code>: Hibernate valida el mapeo contra el esquema de Flyway en cada test de persistencia.</p></div>
+
+<div class="decision"><h3>D15. Baja lógica y agenda del cliente</h3>
+<p><span class="k">Problema.</span> La baja de un perfil no debe borrar operaciones históricas. Además, una franja ocupada no debe poder reservarse.</p>
+<p><span class="k">Alternativa elegida.</span> <code>Perfil.darBajaLogica()</code> marca el perfil inactivo y el caso de uso pausa sus publicaciones; un perfil inactivo no publica ni solicita. Para la agenda, el cupo de cada franja se controla en la propia franja y <code>VerificadorDeAgenda</code> (Pure Fabrication) impide que un cliente tenga dos sesiones activas que se superpongan o que pida dos veces la misma franja.</p>
+<p><span class="k">Consecuencias.</span> El historial queda íntegro. La regla de agenda involucra varias contrataciones, por eso no la tiene ninguna en particular.</p>
+<p><span class="k">Evidencia.</span> <code>PerfilControllerTest.laBajaLogicaPausaSusPublicaciones…</code>, <code>ContratacionControllerTest.elClienteNoPuedeTenerDosSesionesQueSePisan</code>.</p></div>
+
+<h2 class="salto">4. SOLID y GRASP</h2>
+<table>
+<tr><th style="width:22%">Principio</th><th>Dónde se ve</th></tr>
+<tr><td>S — Responsabilidad única</td><td>Casos de uso que solo orquestan; reglas en las entidades; <code>DtoMapper</code> solo traduce; <code>ControllerBase</code> solo maneja identidad y errores.</td></tr>
+<tr><td>O — Abierto/cerrado</td><td>Nuevo estado, estrategia, promoción, canal u observer = clase nueva, sin tocar las existentes.</td></tr>
+<tr><td>L — Sustitución de Liskov</td><td>Los repositorios en memoria y JPA son intercambiables (la suite corre con ambos); todos los estados respetan el contrato y rechazan con la misma excepción.</td></tr>
+<tr><td>I — Segregación de interfaces</td><td>Un puerto por responsabilidad (<code>UnitOfWork</code>, <code>IdentidadProviderPort</code>, <code>CanalNotificacionPort</code>, un repositorio por agregado).</td></tr>
+<tr><td>D — Inversión de dependencias</td><td>La aplicación depende de puertos; la infraestructura los implementa; <code>AppFactory</code> inyecta todo por constructor.</td></tr>
+<tr><td>Information Expert</td><td><code>Contratacion</code> valida permisos, cupo y contraparte; <code>Publicacion</code>, sus requisitos para publicar; <code>Perfil</code>, su reputación.</td></tr>
+<tr><td>Creator</td><td><code>Contratacion.calificar(...)</code> crea la <code>Calificacion</code>; <code>Publicacion</code> agrega sus franjas.</td></tr>
+<tr><td>Controller</td><td>Un controller por entidad o caso de uso (sección 9), delgado.</td></tr>
+<tr><td>Bajo acoplamiento / Alta cohesión</td><td>Observer con destinatarios en el evento; Facade del perfil; estados pequeños y cohesivos.</td></tr>
+<tr><td>Polimorfismo</td><td>State, Strategy, Decorator y Composite reemplazan condicionales.</td></tr>
+<tr><td>Pure Fabrication</td><td>Repositorios, <code>VerificadorDeAgenda</code>, <code>ReglasDeBusqueda</code>, <code>UnitOfWork</code>.</td></tr>
+<tr><td>Indirection / Protected Variations</td><td>Puertos y adaptadores ante proveedores externos; <code>Publicador</code> aísla a la publicación del tipo concreto de autor.</td></tr>
+</table>
+
+<h2>5. Persistencia</h2>
+<ul>
+<li><b>Migraciones Flyway</b>: <code>V1</code> (esquema), <code>V2</code> (datos demo con ids fijos) y <code>V3</code> (tipo de perfil y de publicación, intereses, disponibilidad, fechas, reprogramación, datos de la notificación, restricciones e índices). Hibernate nunca genera DDL: valida.</li>
+<li><b>Restricciones</b>: una wallet por usuario; una calificación por (contratación, autor); sin habilidades repetidas en un perfil o publicación; nombres únicos por tipo en el catálogo; claves foráneas en todas las relaciones.</li>
+<li><b>Índices</b>: estado + fecha de publicación, estado + precio, autor, categoría, reputación, cliente, publicación de la contratación, franjas por publicación y movimientos por wallet y fecha.</li>
+<li><b>Fetch plans</b>: <code>JOIN FETCH</code> en los listados masivos; carga por lotes para el resto; colecciones <code>EAGER</code> donde el dominio las usa fuera de la sesión (justificado en el código).</li>
+</ul>
+
+<h2 class="salto">6. Pruebas</h2>
+<table>
+<tr><th>Nivel</th><th>Suites</th><th>Qué prueban</th></tr>
+<tr><td>Dominio</td><td>MatrizDeEstados, PublicacionState, ContratacionState, Permisos, Reprogramacion, Perfil, DecoratorPrecio, PoliticaCancelacion, CompositeCatalogo</td><td>Reglas, transiciones válidas e inválidas, permisos y estrategias</td></tr>
+<tr><td>Casos de uso (puertos simulados)</td><td>PublicacionService, ContratacionService</td><td>Flujo completo, cupo, saldo insuficiente, políticas</td></tr>
+<tr><td>Controllers + casos de uso</td><td>BusquedaController, ContratacionController, PerfilController, ManejoDeErrores, UiAdaptadores</td><td>Filtros, orden y paginación; casos negativos; códigos de error; contrato del Mock UI Kit</td></tr>
+<tr><td>Adaptadores</td><td>Adaptadores</td><td>Traducción a cada SDK; fábrica de canales; identidad</td></tr>
+<tr><td>Persistencia e integración (H2 modo MySQL + Flyway)</td><td>PublicacionPersistence, OptimisticLocking, ContratacionServiceJpaIntegration, RecorridoJpaIntegration</td><td>Mapeo, estado reconstruido, transacciones, concurrencia, búsqueda en la base sin N+1, recorrido completo</td></tr>
+</table>
+
+<h3>Casos de aceptación de la sección 15</h3>
+<table>
+<tr><th style="width:45%">Caso</th><th>Test</th></tr>
+<tr><td>Publicar una mentoría válida y encontrarla con búsqueda filtrada</td><td>BusquedaControllerTest (filtros), RecorridoJpaIntegrationTest</td></tr>
+<tr><td>Rechazar la publicación de una oferta incompleta</td><td>PublicacionServiceTest.rechazaPublicarUnaOfertaIncompleta, PerfilControllerTest.publicarUnaOfertaIncompletaSeRechaza</td></tr>
+<tr><td>Solicitar, aceptar y pagar con saldo suficiente</td><td>ContratacionControllerTest.recorridoCompleto…</td></tr>
+<tr><td>Evitar que dos aceptaciones consuman el último cupo</td><td>ContratacionControllerTest.cupoAgotado…, OptimisticLockingTest, RecorridoJpaIntegrationTest.dosTransacciones…</td></tr>
+<tr><td>Rechazar un pago con saldo insuficiente sin modificar saldos ni estado</td><td>ContratacionControllerTest.saldoInsuficiente…, ContratacionServiceJpaIntegrationTest</td></tr>
+<tr><td>Cancelar y calcular el reintegro con dos políticas</td><td>ContratacionServiceTest.cancelarConDosPoliticasDistintas…</td></tr>
+<tr><td>Cambiar la estrategia de recomendación sin modificar el caso de uso</td><td>PublicacionServiceTest, BusquedaControllerTest.recomienda…</td></tr>
+<tr><td>Dos tipos de notificación ante un mismo evento</td><td>ContratacionControllerTest.unMismoEventoSalePorDosCanales…</td></tr>
+<tr><td>Promociones acumulables sin precio negativo</td><td>DecoratorPrecioTest</td></tr>
+<tr><td>Completar, calificar una sola vez y recalcular reputación</td><td>ContratacionControllerTest.calificacionNoAutorizada, PerfilControllerTest</td></tr>
+</table>
+<p>Cobertura de líneas: dominio 92,3 %, aplicación 94,0 %, total 86,7 %. <code>mvn test</code> falla si algún paquete de dominio o aplicación baja del 80 %.</p>
+
+<h2>7. Limitaciones y trabajo futuro</h2>
+<ul>
+<li>La pasarela de SkillCoins es interna (débito y crédito entre wallets en una transacción). Si se integrara un proveedor externo, iría detrás de un puerto más con su Adapter, como los de notificación.</li>
+<li>No se aplicó CQRS: con este volumen, un servicio por agregado es suficiente. La búsqueda ya funciona como un modelo de lectura propio (query object + DTO), así que separarla sería directo.</li>
+<li>El dominio lleva anotaciones JPA (ver D14).</li>
+</ul>
+
+<h2 class="salto">Anexo — Diagramas</h2>
+<p>Modelo completo en <code>docs/SkillSwap - Modelo Final.mdj</code> (abrir con StarUML). Las imágenes de cada diagrama están en <code>docs/diagramas</code>.</p>
+<div class="fig"><img src="./diagramas/diagrama-2.png"><br>Diagrama 2 — Patrón State en Publicación y Contratación.</div>
+<div class="fig salto"><img src="./diagramas/diagrama-4.png"><br>Diagrama 4 — Observer, Adapter y Simple Factory.</div>
+<div class="fig salto"><img src="./diagramas/diagrama-6.png"><br>Diagrama 6 — Controllers de la sección 9 y adaptadores del Mock UI Kit.</div>
+</body></html>
